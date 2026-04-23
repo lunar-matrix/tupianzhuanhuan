@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 【需求1】修改网页标题 -->
+    <title>图片格式转换器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&f[]=general-sans@600,700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-[#e0e5ec] min-h-screen text-[#44475a] font-['Satoshi']">
+
+
+    <aside class="fixed left-0 top-0 w-[288px] h-screen bg-[#e0e5ec] p-6 border-right-nm z-50 flex flex-col gap-8">
+        <div class="logo-area nm-flat rounded-2xl p-4 flex items-center gap-3">
+            <div class="w-10 h-10 bg-[#6366f1] rounded-xl flex items-center justify-center text-white nm-flat-sm">
+                <i data-lucide="layers"></i>
+            </div>
+            <!-- 【需求1】修改左上角名字 -->
+            <h1 class="font-['General_Sans'] font-bold text-[#2d3436] text-lg">图片格式转换器</h1>
+        </div>
+
+
+        <nav class="flex flex-col gap-8 overflow-y-auto">
+            <section>
+                <h3 class="font-['General_Sans'] font-semibold text-xs uppercase tracking-widest text-[#a3b1c6] mb-4 px-2">快捷预设</h3>
+                <div class="flex flex-col gap-3">
+                    <!-- 【需求2】自定义尺寸排第一 -->
+                    <button class="nav-btn active" data-preset="custom">
+                        <i data-lucide="crop" class="w-4 h-4"></i>
+                        <span>自定义尺寸</span>
+                    </button>
+                    <!-- 【需求3】证件照 2x2 英寸 -->
+                    <div>
+                        <button class="nav-btn" id="id-photo-toggle">
+                            <i data-lucide="user" class="w-4 h-4"></i>
+                            <span>证件照</span>
+                            <i data-lucide="chevron-down" class="w-3 h-3 ml-auto transition-transform duration-300" id="id-photo-chevron"></i>
+                        </button>
+                        <div id="id-photo-submenu" class="hidden flex flex-col gap-1 pl-7 mt-1">
+                            <button class="nav-btn py-2 text-xs" data-preset="id-1std">1寸 标准 <span class="text-[#a3b1c6] ml-1">25×35mm</span></button>
+                            <button class="nav-btn py-2 text-xs" data-preset="id-1sm">小1寸 <span class="text-[#a3b1c6] ml-1">22×32mm</span></button>
+                            <button class="nav-btn py-2 text-xs" data-preset="id-1lg">大1寸 <span class="text-[#a3b1c6] ml-1">33×48mm</span></button>
+                            <button class="nav-btn py-2 text-xs" data-preset="id-2std">2寸 标准 <span class="text-[#a3b1c6] ml-1">35×53mm</span></button>
+                            <button class="nav-btn py-2 text-xs" data-preset="id-2sm">小2寸 <span class="text-[#a3b1c6] ml-1">35×45mm</span></button>
+                        </div>
+                    </div>
+                    <!-- 【需求3】A4纸尺寸 -->
+                    <button class="nav-btn" data-preset="a4">
+                        <i data-lucide="file-text" class="w-4 h-4"></i>
+                        <span>A4 打印尺寸</span>
+                    </button>
+                </div>
+            </section>
+
+
+            <section>
+                <h3 class="font-['General_Sans'] font-semibold text-xs uppercase tracking-widest text-[#a3b1c6] mb-4 px-2">操作</h3>
+                <div class="flex flex-col gap-3">
+                    <button id="add-more-btn" class="nav-btn">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        <span>继续上传图片</span>
+                    </button>
+                    <button id="clear-all-btn" class="nav-btn">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        <span>清空所有图片</span>
+                    </button>
+                </div>
+                <p class="text-[10px] text-[#a3b1c6] leading-relaxed mt-3 px-2">多张图片时，尺寸/画质/格式设置将统一应用于所有图片。</p>
+            </section>
+        </nav>
+    </aside>
+
+
+    <main class="ml-[288px] flex justify-center">
+        <div class="max-w-[1200px] w-full px-8 py-12 flex items-start gap-8">
+            <div class="flex-1 flex flex-col gap-10 relative">
+                
+                <section id="workspace-top" class="sticky top-6 z-40 shadow-sm rounded-[28px]">
+                    <div id="drop-zone" class="nm-inset rounded-[28px] h-[400px] flex flex-col items-center justify-center border-2 border-dashed border-[#a3b1c6]/30 cursor-pointer group transition-all duration-300 hover:border-indigo-400/50">
+                        <div class="nm-flat w-20 h-20 rounded-full flex items-center justify-center text-[#6366f1] mb-6 group-hover:scale-110 transition-transform">
+                            <i data-lucide="upload-cloud" class="w-8 h-8"></i>
+                        </div>
+                        <h2 class="font-['General_Sans'] text-2xl font-bold text-[#2d3436]">将图片拖拽到此处</h2>
+                        <p class="mt-2 text-[#a3b1c6]">支持 JPG, PNG, WebP (最大 50MB)</p>
+                        <input type="file" id="file-input" class="hidden" multiple accept="image/*">
+                    </div>
+
+
+                    <div id="preview-zone" class="hidden relative nm-inset rounded-[28px] h-[400px] overflow-hidden">
+                        <!-- 裁剪入口按钮 -->
+<button id="crop-btn" class="hidden absolute top-4 left-24 z-20 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full text-xs text-white cursor-pointer hover:bg-black/60 transition-colors flex items-center gap-1.5">
+    <i data-lucide="crop" class="w-3 h-3"></i> 裁剪
+</button>
+
+
+<!-- 裁剪叠层 -->
+<div id="crop-overlay" class="hidden absolute inset-0 z-30 cursor-crosshair select-none">
+    <img id="crop-image" class="w-full h-full object-contain" src="" draggable="false">
+    <div id="crop-selection" class="absolute border-2 border-white pointer-events-none" style="display:none;box-shadow:0 0 0 9999px rgba(0,0,0,0.45);"></div>
+    <div id="crop-dim-label" class="hidden absolute bg-black/70 text-white text-xs px-2 py-1 rounded pointer-events-none z-40"></div>
+    <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-40">
+        <button id="crop-confirm" class="nm-flat px-6 py-3 rounded-2xl font-bold text-sm text-[#6366f1] hover:scale-105 transition-transform">✓ 确认裁剪</button>
+        <button id="crop-cancel" class="nm-flat px-6 py-3 rounded-2xl font-bold text-sm text-[#44475a] hover:scale-105 transition-transform">✕ 取消</button>
+    </div>
+</div>
+<!-- 尺寸裁剪模式叠层 -->
+<div id="crop-mode-overlay" class="hidden absolute inset-0 z-[18] select-none overflow-hidden" style="background:transparent;">
+    <img id="crop-mode-img" class="w-full h-full object-contain" src="" draggable="false" style="pointer-events:none;">
+    <div id="crop-mode-box" class="absolute border-2 border-dashed border-white cursor-move" style="box-shadow:0 0 0 9999px rgba(0,0,0,0.45);"></div>
+    <div id="crop-mode-label" class="absolute bg-black/70 text-white text-[10px] px-2 py-1 rounded pointer-events-none"></div>
+</div>
+
+
+                        <div class="comparison-container w-full h-full relative">
+                            <div class="comparison-img-wrapper after-img absolute inset-0">
+                                <img src="" id="img-after" class="w-full h-full">
+                                <div class="absolute top-4 right-6 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full text-xs text-white">预计输出</div>
+                            </div>
+                            <div class="comparison-img-wrapper before-img absolute inset-0 overflow-hidden w-1/2">
+                                <img src="" id="img-before" class="w-full h-full">
+                                <div class="absolute top-4 left-6 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full text-xs text-white">原图</div>
+                            </div>
+                            <div class="comparison-divider absolute top-0 bottom-0 w-1 bg-white cursor-ew-resize flex items-center justify-center group" style="left: 50%;">
+                                <div class="nm-flat w-8 h-8 rounded-full flex items-center justify-center text-[#6366f1] border-2 border-white">
+                                    <i data-lucide="more-vertical" class="w-4 h-4"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="absolute bottom-6 left-6 right-6 flex justify-between pointer-events-none">
+                            <div class="bg-[#e0e5ec]/90 backdrop-blur p-3 rounded-2xl nm-flat-sm text-[10px] uppercase font-bold tracking-wider text-[#44475a]">
+                                <span id="orig-res">1920 x 1080</span> • <span id="orig-size">2.4 MB</span>
+                            </div>
+                            <div class="bg-[#e0e5ec]/90 backdrop-blur p-3 rounded-2xl nm-flat-sm text-[#6366f1]">
+                                <div class="text-[10px] uppercase font-bold tracking-wider"><span id="target-res">1920 x 1080</span> • <span id="target-size">~500 KB</span></div>
+                                <div class="text-[8px] font-normal text-[#a3b1c6] mt-0.5 normal-case tracking-normal">实际输出可能有微小偏差</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+
+                <section class="flex flex-col gap-6 mb-12">
+                    
+                    <div class="accordion-card nm-flat rounded-[28px] overflow-hidden">
+                        <button class="w-full flex justify-between items-center p-8 text-left accordion-trigger">
+                            <div class="flex items-center gap-4">
+                                <div class="p-3 nm-inset rounded-xl text-[#6366f1]"><i data-lucide="maximize" class="w-5 h-5"></i></div>
+                                <span class="font-['General_Sans'] font-bold text-lg text-[#2d3436]">尺寸调整</span>
+                            </div>
+                            <i data-lucide="chevron-down" class="chevron transition-transform duration-300"></i>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="px-8 pt-0 grid grid-cols-2 gap-8">
+                                <div class="col-span-2">
+                                    <label class="text-xs font-bold uppercase tracking-wider text-[#a3b1c6] block mb-3">单位</label>
+                                    <div class="flex gap-4">
+                                        <label class="nm-radio-container">
+                                            <input type="radio" name="unit" value="px" checked>
+                                            <div class="nm-radio-btn nm-flat">px</div>
+                                        </label>
+                                        <label class="nm-radio-container">
+                                            <input type="radio" name="unit" value="mm">
+                                            <div class="nm-radio-btn nm-flat">mm</div>
+                                        </label>
+                                        <label class="nm-radio-container">
+                                            <input type="radio" name="unit" value="cm">
+                                            <div class="nm-radio-btn nm-flat">cm</div>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col gap-3">
+                                    <label class="text-xs font-bold uppercase tracking-wider text-[#a3b1c6]">宽度</label>
+                                    <div class="nm-inset rounded-2xl flex items-center p-1 px-4 h-14">
+                                        <input type="number" id="input-width" value="1920" class="bg-transparent border-none outline-none w-full font-medium">
+                                        <span class="text-xs text-[#a3b1c6] unit-label">px</span>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col gap-3">
+                                    <label class="text-xs font-bold uppercase tracking-wider text-[#a3b1c6]">高度</label>
+                                    <div class="nm-inset rounded-2xl flex items-center p-1 px-4 h-14">
+                                        <input type="number" id="input-height" value="1080" class="bg-transparent border-none outline-none w-full font-medium">
+                                        <span class="text-xs text-[#a3b1c6] unit-label">px</span>
+                                    </div>
+                                </div>
+<div class="col-span-2 flex items-center gap-4">
+    <div class="nm-switch active" id="link-ratio">
+        <div class="nm-switch-thumb"></div>
+    </div>
+    <span class="text-sm font-medium">保持宽高比</span>
+    <div class="flex gap-2 ml-auto">
+        <button id="mode-scale" class="nm-inset rounded-xl px-4 py-2 text-xs font-bold text-[#6366f1] transition-all">缩放</button>
+        <button id="mode-crop-btn" class="nm-flat rounded-xl px-4 py-2 text-xs font-bold text-[#44475a] transition-all">裁剪</button>
+    </div>
+</div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="accordion-card nm-flat rounded-[28px] overflow-hidden">
+                        <button class="w-full flex justify-between items-center p-8 text-left accordion-trigger">
+                            <div class="flex items-center gap-4">
+                                <div class="p-3 nm-inset rounded-xl text-[#6366f1]"><i data-lucide="file-type" class="w-5 h-5"></i></div>
+                                <span class="font-['General_Sans'] font-bold text-lg text-[#2d3436]">格式转换</span>
+                            </div>
+                            <i data-lucide="chevron-down" class="chevron transition-transform duration-300"></i>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="px-8 pt-0 flex gap-4">
+                                <label class="nm-radio-container">
+                                    <input type="radio" name="format" value="jpg" checked>
+                                    <div class="nm-radio-btn nm-flat">JPG</div>
+                                </label>
+                                <label class="nm-radio-container">
+                                    <input type="radio" name="format" value="png">
+                                    <div class="nm-radio-btn nm-flat">PNG</div>
+                                </label>
+                                <label class="nm-radio-container">
+                                    <input type="radio" name="format" value="webp">
+                                    <div class="nm-radio-btn nm-flat">WebP</div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    
+                    <div class="accordion-card nm-flat rounded-[28px] overflow-hidden">
+                        <button class="w-full flex justify-between items-center p-8 text-left accordion-trigger">
+                            <div class="flex items-center gap-4">
+                                <div class="p-3 nm-inset rounded-xl text-[#6366f1]"><i data-lucide="aperture" class="w-5 h-5"></i></div>
+                                <span class="font-['General_Sans'] font-bold text-lg text-[#2d3436]">输出画质 (压缩率)</span>
+                            </div>
+                            <i data-lucide="chevron-down" class="chevron transition-transform duration-300"></i>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="px-8 pt-0 flex flex-col gap-8">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-[#a3b1c6] max-w-[200px] leading-relaxed">画质越高，文件体积 (MB) 越大。</span>
+                                    <span class="font-bold text-xl text-[#2d3436]" id="quality-val">90%</span>
+                                </div>
+                                <div class="nm-slider-container" id="slider-quality">
+                                    <div class="nm-slider-track nm-inset">
+                                        <div class="nm-slider-fill" style="width: 90%;"></div>
+                                        <div class="nm-slider-thumb nm-flat"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+
+                    <div class="accordion-card nm-flat rounded-[28px] overflow-hidden">
+                        <button class="w-full flex justify-between items-center p-8 text-left accordion-trigger">
+                            <div class="flex items-center gap-4">
+                                <div class="p-3 nm-inset rounded-xl text-[#6366f1]"><i data-lucide="cpu" class="w-5 h-5"></i></div>
+                                <span class="font-['General_Sans'] font-bold text-lg text-[#2d3436]">分辨率 (DPI)</span>
+                            </div>
+                            <i data-lucide="chevron-down" class="chevron transition-transform duration-300"></i>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="px-8 pt-0 flex flex-col gap-8">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-[#a3b1c6] max-w-xs leading-relaxed">纯前端运行。导出 JPG 时会自动将 DPI 写入 JFIF 头；同时用于 mm/cm 与像素的换算。</span>
+                                    <span class="font-bold text-xl text-[#2d3436]" id="dpi-val">300 DPI</span>
+                                </div>
+                                <div class="nm-slider-container" id="slider-dpi">
+                                    <div class="nm-slider-track nm-inset">
+                                        <div class="nm-slider-fill" style="width: 43%;"></div>
+                                        <div class="nm-slider-thumb nm-flat"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <button id="process-btn" class="mt-8 nm-flat bg-[#e0e5ec] py-6 rounded-[28px] font-['General_Sans'] font-bold text-xl text-[#6366f1] hover:scale-[1.01] active:nm-inset active:scale-100 transition-all duration-200">
+                        处理图片
+                    </button>
+                </section>
+            </div>
+
+
+            <aside class="w-[110px] flex-shrink-0 flex flex-col gap-4 sticky top-6">
+                <div class="flex flex-col items-center gap-2 px-2 text-center">
+                    <h3 class="font-['General_Sans'] font-semibold text-[#2d3436]">处理队列</h3>
+                    <span id="batch-count" class="text-xs font-medium bg-[#e0e5ec] nm-flat px-3 py-1 rounded-full text-[#6366f1]">0 张</span>
+                </div>
+                <div id="queue-container" class="flex flex-col gap-5 overflow-y-auto max-h-[80vh] pb-6 pt-2 px-2 no-scrollbar items-center">
+                    <p class="text-sm text-[#a3b1c6] italic mt-4">未上传</p>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script type="module" src="main.js"></script>
+</body>
+</html>
